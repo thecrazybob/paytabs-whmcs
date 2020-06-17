@@ -41,9 +41,9 @@ $secretKey = $gatewayParams['pt_secretKey'];
 $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : 'payment';
 
 // Tokenization Data
-$customerEmail = isset($_REQUEST['customer_email']) ? $_REQUEST['customer_email'] : '';
-$customerPassword = isset($_REQUEST['customer_password']) ? $_REQUEST['customer_password'] : '';
-$customerToken = isset($_REQUEST['customer_token']) ? $_REQUEST['customer_token'] : '';
+$customerEmail = isset($_REQUEST['pt_customer_email']) ? $_REQUEST['pt_customer_email'] : '';
+$customerPassword = isset($_REQUEST['pt_customer_password']) ? $_REQUEST['pt_customer_password'] : '';
+$customerToken = isset($_REQUEST['pt_token']) ? $_REQUEST['pt_token'] : '';
 
 // Customer Data
 $customerPhone = isset($_REQUEST['customer_phone']) ? $_REQUEST['customer_phone'] : '';
@@ -96,7 +96,7 @@ if ($action == 'payment') {
         logTransaction($gatewayParams['paymentmethod'], $_REQUEST, "Success");
 
         // Create a pay method for the newly created remote token.
-        // invoiceSaveRemoteCard($invoiceId, $cardLastFour, $cardType, 'N/A', $customerToken);
+        invoiceSaveRemoteCard($invoiceId, $cardLastFour, $cardType, null, $customerToken);
 
         // Apply payment to the invoice.
         addInvoicePayment($invoiceId, $transactionId, $amount, $fees, $gatewayModuleName);
