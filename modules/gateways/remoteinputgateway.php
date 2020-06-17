@@ -87,7 +87,14 @@ function remoteinputgateway_config()
             'Type' => 'password',
             'Size' => '25',
             'Default' => '',
-            'Description' => 'Enter your Secret Key which is found under Merchant Dashboard > Navigation Menu > Secret Key',
+            'Description' => 'Enter your Secret Key which is found under Merchant Dashboard > Secret Key',
+        ],
+        'pt_secureHashString' => [
+            'FriendlyName' => 'Secure Hash String',
+            'Type' => 'password',
+            'Size' => '40',
+            'Default' => 'secure@paytabs#@aaes11%%',
+            'Description' => 'Enter your Secure Hash String which is found under Account > Profile',
         ],
     ];
 }

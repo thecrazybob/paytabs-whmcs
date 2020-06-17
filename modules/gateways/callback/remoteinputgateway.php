@@ -36,6 +36,7 @@ if (!$gatewayParams['type']) {
 
 $merchantId = $gatewayParams['pt_merchantId'];
 $secretKey = $gatewayParams['pt_secretKey'];
+$secureHashString = $gatewayParams['pt_secureHashString'];
 
 // Retrieve data returned in redirect
 $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : 'payment';
@@ -62,30 +63,45 @@ $transactionResponseCode = isset($_REQUEST['transaction_response_code']) ? $_REQ
 $message = isset($_REQUEST['detail']) ? $_REQUEST['detail'] : '';
 $fees = isset($_REQUEST['fees']) ? $_REQUEST['fees'] : '';
 
-// $success = $responseCode === '100' ? true : false;
-$success = true;
-
-// TODO: Remove if not needed
-// $cardToken = isset($_REQUEST['card_token']) ? $_REQUEST['card_token'] : '';
-// $verificationHash = isset($_REQUEST['verification_hash']) ? $_REQUEST['verification_hash'] : '';
-// $payMethodId = isset($_REQUEST['custom_reference']) ? (int) $_REQUEST['custom_reference'] : 0;
+$success = $responseCode === '100' ? true : false;
 
 // Validate Verification Hash. Uncomment for production use.
-// $comparisonHash = sha1(
-//     implode('|', [
-//         $apiUsername,
-//         $customerId,
-//         $invoiceId,
-//         $amount,
-//         $currencyCode,
-//         $apiPassword,
-//         $token,
-//     ])
-// );
-// if ($verificationHash !== $comparisonHash) {
-//     logTransaction($gatewayParams['paymentmethod'], $_REQUEST, "Invalid Hash");
-//     die('Invalid hash.');
-// }
+$paramsForComparisonHash = [
+    'order_id' => $invoiceId,
+    'response_code' => $responseCode,
+    'customer_name' => $customerName,
+    'transaction_currency' => $currencyCode,
+    'last_4_digits' => $cardLastFour,
+    'customer_email' => $customerEmail,
+];
+       
+// Class taken from: https://dev.paytabs.com/docs/express-checkout-v4/
+class PaytabsSecureHash{
+
+    private $shain_phrase;
+
+    public function __construct($shain_phrase) {
+        $this->shain_phrase = $shain_phrase;
+    }
+
+    public function createSecureHash($params){
+        $string = '';
+        ksort($params);
+        foreach ($params as $keys => $values)
+        {
+        $string .= strtoupper($keys) . '=' . $values . $this->shain_phrase;
+        }
+        return sha1($string);
+    }
+}
+
+$hashObj = new PaytabsSecureHash($secureHashString);
+$comparisonHash = $hashObj->createSecureHash($paramsForComparisonHash);
+
+if ($secureSign !== $comparisonHash) {
+    logTransaction($gatewayParams['paymentmethod'], $_REQUEST, "Invalid Hash");
+    die('Invalid hash.');
+}
 
 if ($action == 'payment') {
     if ($success) {
