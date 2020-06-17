@@ -305,7 +305,7 @@ function remoteinputgateway_remoteinput($params)
         'checkout-button-width' => '600px', // TODO:
         'checkout-button-height' => '300px', //TODO:
         'checkout-button-img-url' => 'https://tejastraffic.com/wp-content/uploads/2018/09/PayNow.png', // TODO:
-        'custom-css' => '', // TODO: 
+        'custom-css' => '.pt-logo img { display: none; }', // TODO: 
 
         // TODO: Remove if not needed
         // 'customer_id' => $clientId,
