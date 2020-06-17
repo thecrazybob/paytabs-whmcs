@@ -34,25 +34,41 @@ if (!$gatewayParams['type']) {
     die("Module Not Activated");
 }
 
-$apiUsername = $gatewayParams['apiUsername'];
-$apiPassword = $gatewayParams['apiPassword'];
-$testMode = $gatewayParams['testMode'];
+$merchantId = $gatewayParams['pt_merchantId'];
+$secretKey = $gatewayParams['pt_secretKey'];
 
 // Retrieve data returned in redirect
-$success = isset($_REQUEST['success']) ? $_REQUEST['success'] : '';
-$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
-$invoiceId = isset($_REQUEST['invoice_id']) ? $_REQUEST['invoice_id'] : '';
-$customerId = isset($_REQUEST['customer_id']) ? $_REQUEST['customer_id'] : '';
-$amount = isset($_REQUEST['amount']) ? $_REQUEST['amount'] : '';
-$fees = isset($_REQUEST['fees']) ? $_REQUEST['fees'] : '';
-$currencyCode = isset($_REQUEST['currency']) ? $_REQUEST['currency'] : '';
+$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : 'payment';
+
+// Tokenization Data
+$customerEmail = isset($_REQUEST['customer_email']) ? $_REQUEST['customer_email'] : '';
+$customerPassword = isset($_REQUEST['customer_password']) ? $_REQUEST['customer_password'] : '';
+$customerToken = isset($_REQUEST['customer_token']) ? $_REQUEST['customer_token'] : '';
+
+// Customer Data
+$customerPhone = isset($_REQUEST['customer_phone']) ? $_REQUEST['customer_phone'] : '';
+$amount = isset($_REQUEST['transaction_amount']) ? $_REQUEST['transaction_amount'] : '';
+$currencyCode = isset($_REQUEST['transaction_currency']) ? $_REQUEST['transaction_currency'] : '';
+$cardType = isset($_REQUEST['card_brand']) ? $_REQUEST['card_brand'] : '';
+$cardFirstFour = isset($_REQUEST['first_4_digits']) ? $_REQUEST['first_4_digits'] : '';
+$cardLastFour = isset($_REQUEST['last_4_digits']) ? $_REQUEST['last_4_digits'] : '';
 $transactionId = isset($_REQUEST['transaction_id']) ? $_REQUEST['transaction_id'] : '';
-$cardLastFour = isset($_REQUEST['card_last_four']) ? $_REQUEST['card_last_four'] : '';
-$cardType = isset($_REQUEST['card_type']) ? $_REQUEST['card_type'] : '';
-$cardExpiryDate = isset($_REQUEST['card_expiry_date']) ? $_REQUEST['card_expiry_date'] : '';
-$cardToken = isset($_REQUEST['card_token']) ? $_REQUEST['card_token'] : '';
-$verificationHash = isset($_REQUEST['verification_hash']) ? $_REQUEST['verification_hash'] : '';
-$payMethodId = isset($_REQUEST['custom_reference']) ? (int) $_REQUEST['custom_reference'] : 0;
+$invoiceId = isset($_REQUEST['order_id']) ? $_REQUEST['order_id'] : '';
+$responseCode = isset($_REQUEST['response_code']) ? $_REQUEST['response_code'] : '';
+$customerName = isset($_REQUEST['customer_name']) ? $_REQUEST['customer_name'] : '';
+$secureSign = isset($_REQUEST['secure_sign']) ? $_REQUEST['secure_sign'] : '';
+$time = isset($_REQUEST['datetime']) ? $_REQUEST['datetime'] : '';
+$transactionResponseCode = isset($_REQUEST['transaction_response_code']) ? $_REQUEST['transaction_response_code'] : '';
+$message = isset($_REQUEST['detail']) ? $_REQUEST['detail'] : '';
+$fees = isset($_REQUEST['fees']) ? $_REQUEST['fees'] : '';
+
+// $success = $responseCode === '100' ? true : false;
+$success = true;
+
+// TODO: Remove if not needed
+// $cardToken = isset($_REQUEST['card_token']) ? $_REQUEST['card_token'] : '';
+// $verificationHash = isset($_REQUEST['verification_hash']) ? $_REQUEST['verification_hash'] : '';
+// $payMethodId = isset($_REQUEST['custom_reference']) ? (int) $_REQUEST['custom_reference'] : 0;
 
 // Validate Verification Hash. Uncomment for production use.
 // $comparisonHash = sha1(
@@ -80,7 +96,7 @@ if ($action == 'payment') {
         logTransaction($gatewayParams['paymentmethod'], $_REQUEST, "Success");
 
         // Create a pay method for the newly created remote token.
-        invoiceSaveRemoteCard($invoiceId, $cardLastFour, $cardType, $cardExpiryDate, $cardToken);
+        // invoiceSaveRemoteCard($invoiceId, $cardLastFour, $cardType, 'N/A', $customerToken);
 
         // Apply payment to the invoice.
         addInvoicePayment($invoiceId, $transactionId, $amount, $fees, $gatewayModuleName);
