@@ -38,7 +38,7 @@ if (!defined("WHMCS")) {
 function remoteinputgateway_MetaData()
 {
     return [
-        'DisplayName' => 'Sample Remote Input Gateway Module',
+        'DisplayName' => 'PayTabs for WHMCS (with Tokenization)',
         'APIVersion' => '1.1', // Use API Version 1.1
     ];
 }
@@ -71,29 +71,23 @@ function remoteinputgateway_config()
         // defined here for backwards compatibility
         'FriendlyName' => [
             'Type' => 'System',
-            'Value' => 'Sample Remote Input Gateway Module',
+            'Value' => 'PayTabs for WHMCS (with Tokenization)',
         ],
         // a text field type allows for single line text input
-        'apiUsername' => [
-            'FriendlyName' => 'API Username',
+        'pt_merchantId' => [
+            'FriendlyName' => 'Merchant ID',
             'Type' => 'text',
             'Size' => '25',
             'Default' => '',
-            'Description' => 'Enter your API Username here',
+            'Description' => 'Enter your PayTabs Merchant ID here e.g. 10012345',
         ],
         // a password field type allows for masked text input
-        'apiPassword' => [
-            'FriendlyName' => 'API Password',
+        'pt_secretKey' => [
+            'FriendlyName' => 'Secret Key',
             'Type' => 'password',
             'Size' => '25',
             'Default' => '',
-            'Description' => 'Enter your API Password here',
-        ],
-        // the yesno field type displays a single checkbox option
-        'testMode' => [
-            'FriendlyName' => 'Test Mode',
-            'Type' => 'yesno',
-            'Description' => 'Tick to enable test mode',
+            'Description' => 'Enter your Secret Key which is found under Merchant Dashboard > Navigation Menu > Secret Key',
         ],
     ];
 }
@@ -124,9 +118,8 @@ function remoteinputgateway_nolocalcc() {}
 function remoteinputgateway_capture($params)
 {
     // Gateway Configuration Parameters
-    $apiUsername = $params['apiUsername'];
-    $apiPassword = $params['apiPassword'];
-    $testMode = $params['testMode'];
+    $merchantId = $params['pt_merchantId'];
+    $secretKey = $params['pt_secretKey'];
 
     // Capture Parameters
     $remoteGatewayToken = $params['gatewayid'];
@@ -219,9 +212,8 @@ function remoteinputgateway_capture($params)
 function remoteinputgateway_remoteinput($params)
 {
     // Gateway Configuration Parameters
-    $apiUsername = $params['apiUsername'];
-    $apiPassword = $params['apiPassword'];
-    $testMode = $params['testMode'];
+    $merchantId = $params['pt_merchantId'];
+    $secretKey = $params['pt_secretKey'];
 
     // Invoice Parameters
     $invoiceId = $params['invoiceid'];
@@ -260,52 +252,60 @@ function remoteinputgateway_remoteinput($params)
     } else {
         $action = 'create';
     }
-
+    
     $formAction = $systemUrl . 'demo/remote-iframe-demo.php';
     $formFields = [
         'action' => $action,
-        'api_username' => $apiUsername,
-        'invoice_id' => $invoiceId,
+        'merchant-id' => $merchantId,
+        'secret-key' => $secretKey,
+        // 'url-redirect' => $systemUrl . 'modules/gateways/callback/remoteinputgateway.php',
+        'url-redirect' => 'http://whmcs.test/modules/gateways/callback/remoteinputgateway.php',
         'amount' => $amount,
         'currency' => $currencyCode,
-        'customer_id' => $clientId,
-        'first_name' => $firstname,
-        'last_name' => $lastname,
-        'email' => $email,
-        'address1' => $address1,
-        'address2' => $address2,
-        'city' => $city,
-        'state' => $state,
-        'postcode' => $postcode,
-        'country' => $country,
-        'phonenumber' => $phone,
-        'return_url' => $systemUrl . 'modules/gateways/callback/remoteinputgateway.php',
+        'order-id' => $invoiceId,
+        'customer-email-address' => $email,
+        'billing-full-address' => $address1 . ' ' . $address2,
+        'billing-city' => $city,
+        'billing-country' => 'ARE', // TODO: Change this
+        'billing-postal-code' => $postcode,
+        'billing-state' => $state,
+        'title' => 'Payment for Invoice #' . $invoiceId,
+        'product-names' => $description,
+        'customer-phone-number' => $phone,
+        'customer-country-code' => '971', // TODO: Change to dynamic
+        'is-tokenization' => 'true',
+
+        // TODO: Remove if not needed
+        // 'customer_id' => $clientId,
+        // 'first_name' => $firstname,
+        // 'last_name' => $lastname,
+
         // Sample verification hash to protect against form tampering
-        'verification_hash' => sha1(
-            implode('|', [
-                $apiUsername,
-                $clientId,
-                $invoiceId,
-                $amount,
-                $currencyCode,
-                $apiPassword,
-                '', // This will be the remoteStorageToken in an update
-            ])
-        ),
+        // 'verification_hash' => sha1(
+        //     implode('|', [
+        //         $merchantId,
+        //         $clientId,
+        //         $invoiceId,
+        //         $amount,
+        //         $currencyCode,
+        //         $secretKey,
+        //         '', // This will be the remoteStorageToken in an update
+        //     ])
+        // ),
     ];
 
     $formOutput = '';
     foreach ($formFields as $key => $value) {
-        $formOutput .= '<input type="hidden" name="' . $key . '" value="' . $value . '">' . PHP_EOL;
+        $formOutput .= 'data-' . $key . '=' . '"' . $value . '"' . PHP_EOL;
     }
 
     // This is a working example which posts to the file: demo/remote-iframe-demo.php
-    return '<form method="post" action="' . $formAction . '">
+    return '<script src="https://www.paytabs.com/express/v4/paytabs-express-checkout.js"
+    id="paytabs-express-checkout"
     ' . $formOutput . '
-    <noscript>
-        <input type="submit" value="Click here to continue &raquo;">
-    </noscript>
-</form>';
+    >
+ </script>';
+
 }
 
 /**
@@ -329,10 +329,9 @@ function remoteinputgateway_remoteinput($params)
 function remoteinputgateway_remoteupdate($params)
 {
     // Gateway Configuration Parameters
-    $apiUsername = $params['apiUsername'];
-    $apiPassword = $params['apiPassword'];
+    $merchantId = $params['pt_merchantId'];
+    $secretKey = $params['pt_secretKey'];
     $remoteStorageToken = $params['gatewayid'];
-    $testMode = $params['testMode'];
 
     // Client Parameters
     $clientId = $params['clientdetails']['id'];
@@ -362,7 +361,7 @@ function remoteinputgateway_remoteupdate($params)
 
     $formAction = $systemUrl . 'demo/remote-iframe-demo.php';
     $formFields = [
-        'api_username' => $apiUsername,
+        'merchantId' => $merchantId,
         'card_token' => $remoteStorageToken,
         'action' => 'update',
         'invoice_id' => 0,
@@ -383,12 +382,12 @@ function remoteinputgateway_remoteupdate($params)
         // Sample verification hash to protect against form tampering
         'verification_hash' => sha1(
             implode('|', [
-                $apiUsername,
+                $merchantId,
                 $clientId,
                 0, // Invoice ID - there is no invoice for an update
                 0, // Amount - there is no amount when updating
                 '', // Currency Code - there is no currency when updating
-                $apiPassword,
+                $secretKey,
                 $remoteStorageToken,
             ])
         ),
@@ -429,9 +428,8 @@ function remoteinputgateway_remoteupdate($params)
 function remoteinputgateway_adminstatusmsg($params)
 {
     // Gateway Configuration Parameters
-    $apiUsername = $params['apiUsername'];
-    $apiPassword = $params['apiPassword'];
-    $testMode = $params['testMode'];
+    $merchantId = $params['pt_merchantId'];
+    $secretKey = $params['pt_secretKey'];
 
     // Invoice Parameters
     $remoteGatewayToken = $params['gatewayid'];
