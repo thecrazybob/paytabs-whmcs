@@ -1,0 +1,8 @@
+# Ignore everything
+*
+
+# But not these files...
+!.gitignore
+!demo/*
+!modules/gateways/remoteinputgateway.php
+!modules/gateways/callback/remoteinputgateway.php
