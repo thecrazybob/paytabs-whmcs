@@ -41,10 +41,18 @@ $secureHashString = $gatewayParams['pt_secureHashString'];
 // Retrieve data returned in redirect
 $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : 'payment';
 
+$action = isset($_REQUEST['is_canceled_pt']) ? 'cancel' : $action;
+
 // Tokenization Data
 $customerEmail = isset($_REQUEST['pt_customer_email']) ? $_REQUEST['pt_customer_email'] : '';
 $customerPassword = isset($_REQUEST['pt_customer_password']) ? $_REQUEST['pt_customer_password'] : '';
 $customerToken = isset($_REQUEST['pt_token']) ? $_REQUEST['pt_token'] : '';
+
+$payTabsTokenData = [
+    'pt_customer_email' => $customerEmail,
+    'pt_customer_password' => $customerPassword,
+    'pt_token' => $customerToken,
+];
 
 // Customer Data
 $customerPhone = isset($_REQUEST['customer_phone']) ? $_REQUEST['customer_phone'] : '';
@@ -98,9 +106,11 @@ class PaytabsSecureHash{
 $hashObj = new PaytabsSecureHash($secureHashString);
 $comparisonHash = $hashObj->createSecureHash($paramsForComparisonHash);
 
-if ($secureSign !== $comparisonHash) {
-    logTransaction($gatewayParams['paymentmethod'], $_REQUEST, "Invalid Hash");
-    die('Invalid hash.');
+if ($action != 'cancel') {
+    if ($secureSign !== $comparisonHash) {
+        logTransaction($gatewayParams['paymentmethod'], $_REQUEST, "Invalid Hash");
+        die('Invalid hash.');
+    }
 }
 
 if ($action == 'payment') {
@@ -112,7 +122,7 @@ if ($action == 'payment') {
         logTransaction($gatewayParams['paymentmethod'], $_REQUEST, "Success");
 
         // Create a pay method for the newly created remote token.
-        invoiceSaveRemoteCard($invoiceId, $cardLastFour, $cardType, null, $customerToken);
+        invoiceSaveRemoteCard($invoiceId, $cardLastFour, $cardType, null, $payTabsTokenData);
 
         // Apply payment to the invoice.
         addInvoicePayment($invoiceId, $transactionId, $amount, $fees, $gatewayModuleName);
@@ -128,6 +138,10 @@ if ($action == 'payment') {
         // Redirect to the invoice with payment failed notice.
         callback3DSecureRedirect($invoiceId, false);
     }
+}
+
+if ($action == 'cancel') {
+    callback3DSecureRedirect($invoiceId, false);
 }
 
 if ($action == 'create') {

@@ -84,14 +84,21 @@ function remoteinputgateway_config()
         // a password field type allows for masked text input
         'pt_secretKey' => [
             'FriendlyName' => 'Secret Key',
-            'Type' => 'password',
+            'Type' => 'text',
             'Size' => '25',
             'Default' => '',
             'Description' => 'Enter your Secret Key which is found under Merchant Dashboard > Secret Key',
         ],
+        'pt_merchantEmail' => [
+            'FriendlyName' => 'Merchant Email',
+            'Type' => 'text',
+            'Size' => '25',
+            'Default' => '',
+            'Description' => 'Enter your Email which you use to login to PayTabs Dashboard',
+        ],
         'pt_secureHashString' => [
             'FriendlyName' => 'Secure Hash String',
-            'Type' => 'password',
+            'Type' => 'text',
             'Size' => '40',
             'Default' => 'secure@paytabs#@aaes11%%',
             'Description' => 'Enter your Secure Hash String which is found under Account > Profile',
@@ -112,10 +119,6 @@ function remoteinputgateway_nolocalcc() {}
  *
  * Called when a payment is requested to be processed and captured.
  *
- * The CVV number parameter will only be present for card holder present
- * transactions and when made against an existing stored payment token
- * where new card data has not been entered.
- *
  * @param array $params Payment Gateway Module Parameters
  *
  * @see https://developers.whmcs.com/payment-gateways/remote-input-gateway/
@@ -126,11 +129,11 @@ function remoteinputgateway_capture($params)
 {
     // Gateway Configuration Parameters
     $merchantId = $params['pt_merchantId'];
+    $merchantEmail = $params['pt_merchantEmail'];
     $secretKey = $params['pt_secretKey'];
 
     // Capture Parameters
-    $remoteGatewayToken = $params['gatewayid'];
-    $cardCvv = $params['cccvv']; // Card Verification Value
+    $remoteGatewayToken = json_decode($params['gatewayid'], true);
 
     // Invoice Parameters
     $invoiceId = $params['invoiceid'];
@@ -159,23 +162,36 @@ function remoteinputgateway_capture($params)
     }
 
     $postFields = [
-        'token' => $remoteGatewayToken,
-        'cvv' => $cardCvv,
-        'invoice_number' => $invoiceId,
+        'merchant_email' => $merchantEmail,
+        'secret_key' => $secretKey,
+        'title' => 'Payment for Invoice #' . $invoiceId,
+        'cc_first_name' => $firstname,
+        'cc_last_name' => $lastname,
+        'order_id' => $invoiceId,
+        'product_name' => $description,
+        'customer_email' => $email,
+        'phone_number' => $phone,
         'amount' => $amount,
         'currency' => $currencyCode,
+        'billing_shipping_details' => 'no',
+
+        'pt_token' => $remoteGatewayToken['pt_token'],
+        'pt_customer_email' => $remoteGatewayToken['pt_customer_email'],
+        'pt_customer_password' => $remoteGatewayToken['pt_customer_password'],
     ];
 
     // Perform API call to initiate capture.
-    // Sample response data:
-    $response = [
-        'success' => true,
-        'transaction_id' => 'ABC123',
-        'fee' => '1.23',
-        'token' => 'abc' . rand(100000, 999999),
-    ];
+    $ch = curl_init('https://www.paytabs.com/apiv3/tokenized_transaction_prepare');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
 
-    if ($response['success']) {
+    // execute!
+    $response = json_decode(curl_exec($ch), true);
+
+    // close the connection, release resources used
+    curl_close($ch);
+        
+    if ($response['response_code'] == '100') {
         return [
             // 'success' if successful, otherwise 'declined', 'error' for failure
             'status' => 'success',
@@ -260,13 +276,13 @@ function remoteinputgateway_remoteinput($params)
         $action = 'create';
     }
     
-    $formAction = $systemUrl . 'demo/remote-iframe-demo.php';
     $formFields = [
         'action' => $action,
         'merchant-id' => $merchantId,
         'secret-key' => $secretKey,
         // 'url-redirect' => $systemUrl . 'modules/gateways/callback/remoteinputgateway.php',
         'url-redirect' => 'http://whmcs.test/modules/gateways/callback/remoteinputgateway.php',
+        'url-cancel' => 'http://whmcs.test/modules/gateways/callback/remoteinputgateway.php?is_canceled_pt=true',
         'amount' => $amount,
         'currency' => $currencyCode,
         'order-id' => $invoiceId,
@@ -281,6 +297,15 @@ function remoteinputgateway_remoteinput($params)
         'customer-phone-number' => $phone,
         'customer-country-code' => '971', // TODO: Change to dynamic
         'is-tokenization' => 'true',
+        'ui-type' => 'button', // TODO:
+        'color' => '#3097ef', // TODO: Change to dynamic
+        'ui-element-id' => 'frmRemoteCardProcess',
+        'ui-show-billing-address' => 'false', // TODO:
+        'ui-show-header' => 'false', // TODO:
+        'checkout-button-width' => '600px', // TODO:
+        'checkout-button-height' => '300px', //TODO:
+        'checkout-button-img-url' => 'https://tejastraffic.com/wp-content/uploads/2018/09/PayNow.png', // TODO:
+        'custom-css' => '', // TODO: 
 
         // TODO: Remove if not needed
         // 'customer_id' => $clientId,
@@ -366,7 +391,6 @@ function remoteinputgateway_remoteupdate($params)
     // Build a form which can be submitted to an iframe target to render
     // the payment form.
 
-    $formAction = $systemUrl . 'demo/remote-iframe-demo.php';
     $formFields = [
         'merchantId' => $merchantId,
         'card_token' => $remoteStorageToken,
@@ -410,7 +434,7 @@ function remoteinputgateway_remoteupdate($params)
 
     // This is a working example which posts to the file: demo/remote-iframe-demo.php
     return '<div id="frmRemoteCardProcess" class="text-center">
-    <form method="post" action="' . $formAction . '" target="remoteUpdateIFrame">
+    <form method="post" action="#" target="remoteUpdateIFrame">
         ' . $formOutput . '
         <noscript>
             <input type="submit" value="Click here to continue &raquo;">
@@ -439,7 +463,7 @@ function remoteinputgateway_adminstatusmsg($params)
     $secretKey = $params['pt_secretKey'];
 
     // Invoice Parameters
-    $remoteGatewayToken = $params['gatewayid'];
+    $remoteGatewayToken = json_decode($params['gatewayid'], true);
     $invoiceId = $params['id']; // The Invoice ID
     $userId = $params['userid']; // The Owners User ID
     $date = $params['date']; // The Invoice Create Date
@@ -451,7 +475,7 @@ function remoteinputgateway_adminstatusmsg($params)
             'type' => 'info',
             'title' => 'Token Gateway Profile',
             'msg' => 'This customer has a Remote Token storing their card'
-                . ' details for automated recurring billing with ID ' . $remoteGatewayToken,
+                . ' details for automated recurring billing with Token ID ' . $remoteGatewayToken['pt_token'],
         ];
     }
 }
