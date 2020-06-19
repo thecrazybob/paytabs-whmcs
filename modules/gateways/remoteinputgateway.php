@@ -78,7 +78,6 @@ function remoteinputgateway_config()
             'FriendlyName' => 'Merchant ID',
             'Type' => 'text',
             'Size' => '25',
-            'Default' => '',
             'Description' => 'Enter your PayTabs Merchant ID here e.g. 10012345',
         ],
         // a password field type allows for masked text input
@@ -86,14 +85,12 @@ function remoteinputgateway_config()
             'FriendlyName' => 'Secret Key',
             'Type' => 'text',
             'Size' => '25',
-            'Default' => '',
             'Description' => 'Enter your Secret Key which is found under Merchant Dashboard > Secret Key',
         ],
         'pt_merchantEmail' => [
             'FriendlyName' => 'Merchant Email',
             'Type' => 'text',
             'Size' => '25',
-            'Default' => '',
             'Description' => 'Enter your Email which you use to login to PayTabs Dashboard',
         ],
         'pt_secureHashString' => [
@@ -103,6 +100,67 @@ function remoteinputgateway_config()
             'Default' => 'secure@paytabs#@aaes11%%',
             'Description' => 'Enter your Secure Hash String which is found under Account > Profile',
         ],
+        'pt_type' => [
+            'FriendlyName' => 'PayTabs Checkout Type',
+            'Type' => 'dropdown',
+            'Options' => array(
+                'button' => 'Button',
+                'iframe' => 'Iframe',
+            ),
+            'Description' => 'Button / Iframe',
+        ],
+        'pt_color' => [
+            'FriendlyName' => 'Theme Colour',
+            'Type' => 'text',
+            'Size' => '7',
+            'Description' => 'Enter CSS Hex color including # e.g. #3097ef',
+        ],
+        'pt_showBillingAddress' => [
+            'FriendlyName' => 'Show Billing Address',
+            'Type' => 'yesno',
+            'Description' => 'Show/Hide Billing Address in PayTabs Form',
+        ],
+        'pt_showHeader' => [
+            'FriendlyName' => 'Show Header',
+            'Type' => 'yesno',
+            'Description' => 'Show/Hide Header in PayTabs Form',
+        ],
+        'pt_buttonImgWidth' => [
+            'FriendlyName' => 'Checkout Button Image Width',
+            'Type' => 'text',
+            'Size' => '5',
+            'Description' => 'Width in px e.g. 30px',
+        ],
+        'pt_buttonImgHeight' => [
+            'FriendlyName' => 'Checkout Button Height',
+            'Type' => 'text',
+            'Size' => '5',
+            'Description' => 'Width in px e.g. 30px',
+        ],
+        'pt_buttonImgUrl' => [
+            'FriendlyName' => 'Checkout Custom Image',
+            'Type' => 'text',
+            'Size' => '100',
+            'Description' => 'Enter url to custom image',
+        ],
+        'pt_customCss' => [
+            'FriendlyName' => 'Checkout Form CSS',
+            'Type' => 'textarea',
+            'Description' => 'Add any custom css over here',
+        ],
+        'pt_comissionRate' => [
+            'FriendlyName' => 'PayTabs Comission Rate',
+            'Type' => 'text',
+            'Default' => '2.65',
+            'Description' => 'PayTabs Comission e.g. 2.65 (do not add percentage sign)',
+        ],
+        'pt_taxOverComissionRate' => [
+            'FriendlyName' => 'PayTabs VAT over Comission Rate',
+            'Type' => 'text',
+            'Default' => '5',
+            'Description' => 'PayTabs VAT over comission e.g. 5 (do not add percentage sign)',
+        ],
+
     ];
 }
 
@@ -192,13 +250,35 @@ function remoteinputgateway_capture($params)
     curl_close($ch);
         
     if ($response['response_code'] == '100') {
+        /**
+         * Calculates PayTabs Comission Including VAT
+         *
+         * @param int $amount
+         * @param int $comission_rate
+         * @param int $tax_over_comission
+         * @return string
+         */
+        function calculate_pt_fee($amount, $comission_rate, $tax_over_comission) {
+        
+            $rate = $comission_rate / 100;
+        
+            $fee = $amount * $rate;
+        
+            $fee_with_tax_over_fee = $fee * 1.05;
+        
+            return (string) $fee_with_tax_over_fee;
+
+        }
+
+        $fees = calculate_pt_fee($amount, $params['pt_comissionRate'], $params['pt_taxOverComissionRate']);
+
         return [
             // 'success' if successful, otherwise 'declined', 'error' for failure
             'status' => 'success',
             // The unique transaction id for the payment
             'transid' => $response['transaction_id'],
             // Optional fee amount for the transaction
-            'fee' => $response['fee'],
+            'fee' => $fees,
             // Return only if the token has updated or changed
             'gatewayid' => $response['token'],
             // Data to be recorded in the gateway log - can be a string or array
@@ -256,6 +336,7 @@ function remoteinputgateway_remoteinput($params)
     $postcode = $params['clientdetails']['postcode'];
     $country = $params['clientdetails']['country'];
     $phone = $params['clientdetails']['phonenumber'];
+    $phone_country_code = $params['clientdetails']['phonecc'];
 
     // System Parameters
     $companyName = $params['companyname'];
@@ -275,55 +356,43 @@ function remoteinputgateway_remoteinput($params)
     } else {
         $action = 'create';
     }
+
+    // PayTabs Country Mapping
+    $countries = '{"BD": "BGD", "BE": "BEL", "BF": "BFA", "BG": "BGR", "BA": "BIH", "BB": "BRB", "WF": "WLF", "BL": "BLM", "BM": "BMU", "BN": "BRN", "BO": "BOL", "BH": "BHR", "BI": "BDI", "BJ": "BEN", "BT": "BTN", "JM": "JAM", "BV": "BVT", "BW": "BWA", "WS": "WSM", "BQ": "BES", "BR": "BRA", "BS": "BHS", "JE": "JEY", "BY": "BLR", "BZ": "BLZ", "RU": "RUS", "RW": "RWA", "RS": "SRB", "TL": "TLS", "RE": "REU", "TM": "TKM", "TJ": "TJK", "RO": "ROU", "TK": "TKL", "GW": "GNB", "GU": "GUM", "GT": "GTM", "GS": "SGS", "GR": "GRC", "GQ": "GNQ", "GP": "GLP", "JP": "JPN", "GY": "GUY", "GG": "GGY", "GF": "GUF", "GE": "GEO", "GD": "GRD", "GB": "GBR", "GA": "GAB", "SV": "SLV", "GN": "GIN", "GM": "GMB", "GL": "GRL", "GI": "GIB", "GH": "GHA", "OM": "OMN", "TN": "TUN", "JO": "JOR", "HR": "HRV", "HT": "HTI", "HU": "HUN", "HK": "HKG", "HN": "HND", "HM": "HMD", "VE": "VEN", "PR": "PRI", "PS": "PSE", "PW": "PLW", "PT": "PRT", "SJ": "SJM", "PY": "PRY", "IQ": "IRQ", "PA": "PAN", "PF": "PYF", "PG": "PNG", "PE": "PER", "PK": "PAK", "PH": "PHL", "PN": "PCN", "PL": "POL", "PM": "SPM", "ZM": "ZMB", "EH": "ESH", "EE": "EST", "EG": "EGY", "ZA": "ZAF", "EC": "ECU", "IT": "ITA", "VN": "VNM", "SB": "SLB", "ET": "ETH", "SO": "SOM", "ZW": "ZWE", "SA": "SAU", "ES": "ESP", "ER": "ERI", "ME": "MNE", "MD": "MDA", "MG": "MDG", "MF": "MAF", "MA": "MAR", "MC": "MCO", "UZ": "UZB", "MM": "MMR", "ML": "MLI", "MO": "MAC", "MN": "MNG", "MH": "MHL", "MK": "MKD", "MU": "MUS", "MT": "MLT", "MW": "MWI", "MV": "MDV", "MQ": "MTQ", "MP": "MNP", "MS": "MSR", "MR": "MRT", "IM": "IMN", "UG": "UGA", "TZ": "TZA", "MY": "MYS", "MX": "MEX", "IL": "ISR", "FR": "FRA", "IO": "IOT", "SH": "SHN", "FI": "FIN", "FJ": "FJI", "FK": "FLK", "FM": "FSM", "FO": "FRO", "NI": "NIC", "NL": "NLD", "NO": "NOR", "NA": "NAM", "VU": "VUT", "NC": "NCL", "NE": "NER", "NF": "NFK", "NG": "NGA", "NZ": "NZL", "NP": "NPL", "NR": "NRU", "NU": "NIU", "CK": "COK", "XK": "XKX", "CI": "CIV", "CH": "CHE", "CO": "COL", "CN": "CHN", "CM": "CMR", "CL": "CHL", "CC": "CCK", "CA": "CAN", "CG": "COG", "CF": "CAF", "CD": "COD", "CZ": "CZE", "CY": "CYP", "CX": "CXR", "CR": "CRI", "CW": "CUW", "CV": "CPV", "CU": "CUB", "SZ": "SWZ", "SY": "SYR", "SX": "SXM", "KG": "KGZ", "KE": "KEN", "SS": "SSD", "SR": "SUR", "KI": "KIR", "KH": "KHM", "KN": "KNA", "KM": "COM", "ST": "STP", "SK": "SVK", "KR": "KOR", "SI": "SVN", "KP": "PRK", "KW": "KWT", "SN": "SEN", "SM": "SMR", "SL": "SLE", "SC": "SYC", "KZ": "KAZ", "KY": "CYM", "SG": "SGP", "SE": "SWE", "SD": "SDN", "DO": "DOM", "DM": "DMA", "DJ": "DJI", "DK": "DNK", "VG": "VGB", "DE": "DEU", "YE": "YEM", "DZ": "DZA", "US": "USA", "UY": "URY", "YT": "MYT", "UM": "UMI", "LB": "LBN", "LC": "LCA", "LA": "LAO", "TV": "TUV", "TW": "TWN", "TT": "TTO", "TR": "TUR", "LK": "LKA", "LI": "LIE", "LV": "LVA", "TO": "TON", "LT": "LTU", "LU": "LUX", "LR": "LBR", "LS": "LSO", "TH": "THA", "TF": "ATF", "TG": "TGO", "TD": "TCD", "TC": "TCA", "LY": "LBY", "VA": "VAT", "VC": "VCT", "AE": "ARE", "AD": "AND", "AG": "ATG", "AF": "AFG", "AI": "AIA", "VI": "VIR", "IS": "ISL", "IR": "IRN", "AM": "ARM", "AL": "ALB", "AO": "AGO", "AQ": "ATA", "AS": "ASM", "AR": "ARG", "AU": "AUS", "AT": "AUT", "AW": "ABW", "IN": "IND", "AX": "ALA", "AZ": "AZE", "IE": "IRL", "ID": "IDN", "UA": "UKR", "QA": "QAT", "MZ": "MOZ"}';
+
+    $countries_array = json_decode($countries, true);
+
+    $selected_country_iso3_code = $countries_array[$params['clientdetails']['countrycode']];
     
     $formFields = [
         'action' => $action,
         'merchant-id' => $merchantId,
         'secret-key' => $secretKey,
-        // 'url-redirect' => $systemUrl . 'modules/gateways/callback/remoteinputgateway.php',
-        'url-redirect' => 'http://whmcs.test/modules/gateways/callback/remoteinputgateway.php',
-        'url-cancel' => 'http://whmcs.test/modules/gateways/callback/remoteinputgateway.php?is_canceled_pt=true',
+        'url-redirect' => $systemUrl . 'modules/gateways/callback/remoteinputgateway.php',
+        'url-cancel' => $systemUrl . 'modules/gateways/callback/remoteinputgateway.php?is_canceled_pt=true',
         'amount' => $amount,
         'currency' => $currencyCode,
         'order-id' => $invoiceId,
         'customer-email-address' => $email,
         'billing-full-address' => $address1 . ' ' . $address2,
         'billing-city' => $city,
-        'billing-country' => 'ARE', // TODO: Change this
+        'billing-country' => $selected_country_iso3_code,
         'billing-postal-code' => $postcode,
         'billing-state' => $state,
         'title' => 'Payment for Invoice #' . $invoiceId,
         'product-names' => $description,
         'customer-phone-number' => $phone,
-        'customer-country-code' => '971', // TODO: Change to dynamic
+        'customer-country-code' => $phone_country_code,
         'is-tokenization' => 'true',
-        'ui-type' => 'button', // TODO:
-        'color' => '#3097ef', // TODO: Change to dynamic
+        'ui-type' => $params['pt_type'],
+        'color' => $params['pt_color'],
         'ui-element-id' => 'frmRemoteCardProcess',
-        'ui-show-billing-address' => 'false', // TODO:
-        'ui-show-header' => 'false', // TODO:
-        'checkout-button-width' => '600px', // TODO:
-        'checkout-button-height' => '300px', //TODO:
-        'checkout-button-img-url' => 'https://tejastraffic.com/wp-content/uploads/2018/09/PayNow.png', // TODO:
-        'custom-css' => '.pt-logo img { display: none; }', // TODO: 
-
-        // TODO: Remove if not needed
-        // 'customer_id' => $clientId,
-        // 'first_name' => $firstname,
-        // 'last_name' => $lastname,
-
-        // Sample verification hash to protect against form tampering
-        // 'verification_hash' => sha1(
-        //     implode('|', [
-        //         $merchantId,
-        //         $clientId,
-        //         $invoiceId,
-        //         $amount,
-        //         $currencyCode,
-        //         $secretKey,
-        //         '', // This will be the remoteStorageToken in an update
-        //     ])
-        // ),
+        'ui-show-billing-address' => $params['pt_showBillingAddress'],
+        'ui-show-header' => $params['pt_showHeader'],
+        'checkout-button-width' => $params['pt_buttonImgWidth'], 
+        'checkout-button-height' => $params['pt_buttonImgHeight'],
+        'checkout-button-img-url' => $params['pt_buttomImgUrl'], 
+        'custom-css' => $params['pt_customCss'],  
     ];
 
     $formOutput = '';
@@ -331,12 +400,14 @@ function remoteinputgateway_remoteinput($params)
         $formOutput .= 'data-' . $key . '=' . '"' . $value . '"' . PHP_EOL;
     }
 
-    // This is a working example which posts to the file: demo/remote-iframe-demo.php
+    // Post params to PayTabs
     return '<script src="https://www.paytabs.com/express/v4/paytabs-express-checkout.js"
     id="paytabs-express-checkout"
     ' . $formOutput . '
     >
  </script>';
+
+ 
 
 }
 

@@ -69,7 +69,31 @@ $secureSign = isset($_REQUEST['secure_sign']) ? $_REQUEST['secure_sign'] : '';
 $time = isset($_REQUEST['datetime']) ? $_REQUEST['datetime'] : '';
 $transactionResponseCode = isset($_REQUEST['transaction_response_code']) ? $_REQUEST['transaction_response_code'] : '';
 $message = isset($_REQUEST['detail']) ? $_REQUEST['detail'] : '';
-$fees = isset($_REQUEST['fees']) ? $_REQUEST['fees'] : '';
+// Uncomment if provided by gateway
+// $fees = isset($_REQUEST['fees']) ? $_REQUEST['fees'] : '';
+
+
+/**
+ * Calculates PayTabs Comission Including VAT
+ *
+ * @param int $amount
+ * @param int $comission_rate
+ * @param int $tax_over_comission
+ * @return string
+ */
+function calculate_pt_fee($amount, $comission_rate, $tax_over_comission) {
+
+    $rate = $comission_rate / 100;
+
+    $fee = $amount * $rate;
+
+    $fee_with_tax_over_fee = $fee * 1.05;
+
+    return (string) $fee_with_tax_over_fee;
+    
+}
+
+$fees = calculate_pt_fee($amount, $gatewayParams['pt_comissionRate'], $gatewayParams['pt_taxOverComissionRate']);
 
 $success = $responseCode === '100' ? true : false;
 
