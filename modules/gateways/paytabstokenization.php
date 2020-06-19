@@ -35,7 +35,7 @@ if (!defined("WHMCS")) {
  *
  * @return array
  */
-function remoteinputgateway_MetaData()
+function paytabstokenization_MetaData()
 {
     return [
         'DisplayName' => 'PayTabs for WHMCS (with Tokenization)',
@@ -64,7 +64,7 @@ function remoteinputgateway_MetaData()
  *
  * @return array
  */
-function remoteinputgateway_config()
+function paytabstokenization_config()
 {
     return [
         // the friendly display name for a payment gateway should be
@@ -170,7 +170,7 @@ function remoteinputgateway_config()
  * This is a required function declaration. Denotes that the module should
  * not allow local card data input.
  */
-function remoteinputgateway_nolocalcc() {}
+function paytabstokenization_nolocalcc() {}
 
 /**
  * Capture payment.
@@ -183,7 +183,7 @@ function remoteinputgateway_nolocalcc() {}
  *
  * @return array
  */
-function remoteinputgateway_capture($params)
+function paytabstokenization_capture($params)
 {
     // Gateway Configuration Parameters
     $merchantId = $params['pt_merchantId'];
@@ -312,7 +312,7 @@ function remoteinputgateway_capture($params)
  *
  * @return array
  */
-function remoteinputgateway_remoteinput($params)
+function paytabstokenization_remoteinput($params)
 {
     // Gateway Configuration Parameters
     $merchantId = $params['pt_merchantId'];
@@ -368,8 +368,8 @@ function remoteinputgateway_remoteinput($params)
         'action' => $action,
         'merchant-id' => $merchantId,
         'secret-key' => $secretKey,
-        'url-redirect' => $systemUrl . 'modules/gateways/callback/remoteinputgateway.php',
-        'url-cancel' => $systemUrl . 'modules/gateways/callback/remoteinputgateway.php?is_canceled_pt=true',
+        'url-redirect' => $systemUrl . 'modules/gateways/callback/paytabstokenization.php',
+        'url-cancel' => $systemUrl . 'modules/gateways/callback/paytabstokenization.php?is_canceled_pt=true',
         'amount' => $amount,
         'currency' => $currencyCode,
         'order-id' => $invoiceId,
@@ -429,7 +429,7 @@ function remoteinputgateway_remoteinput($params)
  *
  * @return array
  */
-function remoteinputgateway_remoteupdate($params)
+function paytabstokenization_remoteupdate($params)
 {
     // Gateway Configuration Parameters
     $merchantId = $params['pt_merchantId'];
@@ -480,7 +480,7 @@ function remoteinputgateway_remoteupdate($params)
         'postcode' => $postcode,
         'country' => $country,
         'phonenumber' => $phone,
-        'return_url' => $systemUrl . 'modules/gateways/callback/remoteinputgateway.php',
+        'return_url' => $systemUrl . 'modules/gateways/callback/paytabstokenization.php',
         // Sample verification hash to protect against form tampering
         'verification_hash' => sha1(
             implode('|', [
@@ -527,7 +527,7 @@ function remoteinputgateway_remoteupdate($params)
  *
  * @return array
  */
-function remoteinputgateway_adminstatusmsg($params)
+function paytabstokenization_adminstatusmsg($params)
 {
     // Gateway Configuration Parameters
     $merchantId = $params['pt_merchantId'];
