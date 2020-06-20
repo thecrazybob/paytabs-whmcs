@@ -393,7 +393,7 @@ function paytabstokenization_remoteinput($params)
         'checkout-button-width' => $params['pt_buttonImgWidth'], 
         'checkout-button-height' => $params['pt_buttonImgHeight'],
         'checkout-button-img-url' => $params['pt_buttonImgUrl'], 
-        'custom-css' => $params['pt_customCss'],  
+        'custom-css' => preg_replace("/\r|\n/", "", $params['pt_customCss']),  
     ];
 
     $formOutput = '';
