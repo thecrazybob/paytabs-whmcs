@@ -316,8 +316,8 @@ function paytabstokenization_remoteinput($params)
     $merchantId = $params['pt_merchantId'];
     $secretKey = $params['pt_secretKey'];
 
-    $showBilling = $params['pt_hideBillingAddress'] == 'on' ? 'true' : 'false';
-    $showHeader =  $params['pt_hideHeader'] == 'on' ? 'true' : 'false';
+    $showBilling = $params['pt_hideBillingAddress'] == 'on' ? 'false' : 'true';
+    $showHeader =  $params['pt_hideHeader'] == 'on' ? 'false' : 'true';
 
     // Invoice Parameters
     $invoiceId = $params['invoiceid'];
