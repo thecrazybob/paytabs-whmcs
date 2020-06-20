@@ -392,7 +392,7 @@ function paytabstokenization_remoteinput($params)
         'ui-show-header' => $showHeader,
         'checkout-button-width' => $params['pt_buttonImgWidth'], 
         'checkout-button-height' => $params['pt_buttonImgHeight'],
-        'checkout-button-img-url' => $params['pt_buttomImgUrl'], 
+        'checkout-button-img-url' => $params['pt_buttonImgUrl'], 
         'custom-css' => $params['pt_customCss'],  
     ];
 
