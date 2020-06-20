@@ -38,7 +38,7 @@ if (!defined("WHMCS")) {
 function paytabstokenization_MetaData()
 {
     return [
-        'DisplayName' => 'PayTabs for WHMCS (with Tokenization)',
+        'DisplayName' => 'PayTabs (with Tokenization)',
         'APIVersion' => '1.1', // Use API Version 1.1
     ];
 }
@@ -73,14 +73,12 @@ function paytabstokenization_config()
             'Type' => 'System',
             'Value' => 'PayTabs for WHMCS (with Tokenization)',
         ],
-        // a text field type allows for single line text input
         'pt_merchantId' => [
             'FriendlyName' => 'Merchant ID',
             'Type' => 'text',
             'Size' => '25',
             'Description' => 'Enter your PayTabs Merchant ID here e.g. 10012345',
         ],
-        // a password field type allows for masked text input
         'pt_secretKey' => [
             'FriendlyName' => 'Secret Key',
             'Type' => 'text',
@@ -115,15 +113,15 @@ function paytabstokenization_config()
             'Size' => '7',
             'Description' => 'Enter CSS Hex color including # e.g. #3097ef',
         ],
-        'pt_showBillingAddress' => [
-            'FriendlyName' => 'Show Billing Address',
+        'pt_hideBillingAddress' => [
+            'FriendlyName' => 'Hide Billing Address',
             'Type' => 'yesno',
-            'Description' => 'Show/Hide Billing Address in PayTabs Form',
+            'Description' => 'Hide Billing Address in PayTabs Form',
         ],
-        'pt_showHeader' => [
-            'FriendlyName' => 'Show Header',
+        'pt_hideHeader' => [
+            'FriendlyName' => 'Hide Header',
             'Type' => 'yesno',
-            'Description' => 'Show/Hide Header in PayTabs Form',
+            'Description' => 'Hide Header in PayTabs Form',
         ],
         'pt_buttonImgWidth' => [
             'FriendlyName' => 'Checkout Button Image Width',
@@ -318,6 +316,9 @@ function paytabstokenization_remoteinput($params)
     $merchantId = $params['pt_merchantId'];
     $secretKey = $params['pt_secretKey'];
 
+    $showBilling = $params['pt_hideBillingAddress'] == 'on' ? 'true' : 'false';
+    $showHeader =  $params['pt_hideHeader'] == 'on' ? 'true' : 'false';
+
     // Invoice Parameters
     $invoiceId = $params['invoiceid'];
     $description = $params['description'];
@@ -387,8 +388,8 @@ function paytabstokenization_remoteinput($params)
         'ui-type' => $params['pt_type'],
         'color' => $params['pt_color'],
         'ui-element-id' => 'frmRemoteCardProcess',
-        'ui-show-billing-address' => $params['pt_showBillingAddress'],
-        'ui-show-header' => $params['pt_showHeader'],
+        'ui-show-billing-address' => $showBilling,
+        'ui-show-header' => $showHeader,
         'checkout-button-width' => $params['pt_buttonImgWidth'], 
         'checkout-button-height' => $params['pt_buttonImgHeight'],
         'checkout-button-img-url' => $params['pt_buttomImgUrl'], 
