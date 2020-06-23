@@ -104,7 +104,7 @@ $paramsForComparisonHash = [
     'customer_name' => $customerName,
     'transaction_currency' => $currencyCode,
     'last_4_digits' => $cardLastFour,
-    'customer_email' => $customerEmail,
+    'customer_email' => $_REQUEST['customer_email'],
 ];
        
 // Class taken from: https://dev.paytabs.com/docs/express-checkout-v4/
