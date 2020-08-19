@@ -146,7 +146,8 @@ if ($action == 'payment') {
         logTransaction($gatewayParams['paymentmethod'], $_REQUEST, "Success");
 
         // Create a pay method for the newly created remote token.
-        invoiceSaveRemoteCard($invoiceId, $cardLastFour, $cardType, null, $payTabsTokenData);
+        // Uncomment the below line to allow saving remote card token
+        // invoiceSaveRemoteCard($invoiceId, $cardLastFour, $cardType, null, $payTabsTokenData);
 
         // Apply payment to the invoice.
         addInvoicePayment($invoiceId, $transactionId, $amount, $fees, $gatewayModuleName);
