@@ -146,17 +146,17 @@ function paytabstokenization_config()
             'Type' => 'textarea',
             'Description' => 'Add any custom css over here',
         ],
-        'pt_comissionRate' => [
-            'FriendlyName' => 'PayTabs Comission Rate',
+        'pt_commissionRate' => [
+            'FriendlyName' => 'PayTabs Commission Rate',
             'Type' => 'text',
             'Default' => '2.65',
-            'Description' => 'PayTabs Comission e.g. 2.65 (do not add percentage sign)',
+            'Description' => 'PayTabs Commission e.g. 2.65 (do not add percentage sign)',
         ],
-        'pt_taxOverComissionRate' => [
-            'FriendlyName' => 'PayTabs VAT over Comission Rate',
+        'pt_taxOverCommissionRate' => [
+            'FriendlyName' => 'PayTabs VAT over Commission Rate',
             'Type' => 'text',
             'Default' => '5',
-            'Description' => 'PayTabs VAT over comission e.g. 5 (do not add percentage sign)',
+            'Description' => 'PayTabs VAT over commission e.g. 5 (do not add percentage sign)',
         ],
 
     ];
@@ -249,16 +249,16 @@ function paytabstokenization_capture($params)
         
     if ($response['response_code'] == '100') {
         /**
-         * Calculates PayTabs Comission Including VAT
+         * Calculates PayTabs Commission Including VAT
          *
          * @param int $amount
-         * @param int $comission_rate
-         * @param int $tax_over_comission
+         * @param int $commission_rate
+         * @param int $tax_over_commission
          * @return string
          */
-        function calculate_pt_fee($amount, $comission_rate, $tax_over_comission) {
+        function calculate_pt_fee($amount, $commission_rate, $tax_over_commission) {
         
-            $rate = $comission_rate / 100;
+            $rate = $commission_rate / 100;
         
             $fee = $amount * $rate;
         
@@ -268,7 +268,7 @@ function paytabstokenization_capture($params)
 
         }
 
-        $fees = calculate_pt_fee($amount, $params['pt_comissionRate'], $params['pt_taxOverComissionRate']);
+        $fees = calculate_pt_fee($amount, $params['pt_commissionRate'], $params['pt_taxOverCommissionRate']);
 
         return [
             // 'success' if successful, otherwise 'declined', 'error' for failure

@@ -74,16 +74,16 @@ $message = isset($_REQUEST['detail']) ? $_REQUEST['detail'] : '';
 
 
 /**
- * Calculates PayTabs Comission Including VAT
+ * Calculates PayTabs Commission Including VAT
  *
  * @param int $amount
- * @param int $comission_rate
- * @param int $tax_over_comission
+ * @param int $commission_rate
+ * @param int $tax_over_commission
  * @return string
  */
-function calculate_pt_fee($amount, $comission_rate, $tax_over_comission) {
+function calculate_pt_fee($amount, $commission_rate, $tax_over_commission) {
 
-    $rate = $comission_rate / 100;
+    $rate = $commission_rate / 100;
 
     $fee = $amount * $rate;
 
@@ -93,7 +93,7 @@ function calculate_pt_fee($amount, $comission_rate, $tax_over_comission) {
     
 }
 
-$fees = calculate_pt_fee($amount, $gatewayParams['pt_comissionRate'], $gatewayParams['pt_taxOverComissionRate']);
+$fees = calculate_pt_fee($amount, $gatewayParams['pt_commissionRate'], $gatewayParams['pt_taxOverCommissionRate']);
 
 $success = $responseCode === '100' ? true : false;
 
