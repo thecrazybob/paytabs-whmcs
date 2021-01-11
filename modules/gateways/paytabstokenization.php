@@ -402,7 +402,7 @@ function paytabstokenization_remoteinput($params)
     }
 
     // Post params to PayTabs
-    return '<script src="https://www.paytabs.com/express/v4/paytabs-express-checkout.js"
+    return '<script src="https://secure.paytabs.com/express/v4/paytabs-express-checkout.js"
     id="paytabs-express-checkout"
     ' . $formOutput . '
     >
